@@ -4,9 +4,10 @@ function App() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/users")
-      .then(res => res.json())
-      .then(data => setUsers(data));
+    fetch('/api/users')  // Relative path works in same-origin serving
+      .then((res) => res.json())
+      .then((data) => setUsers(data))
+      .catch((err) => console.error('Error fetching users:', err));
   }, []);
 
   return (

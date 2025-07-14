@@ -1,31 +1,36 @@
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 import mysql.connector
 import os
+
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000","http://13.61.145.147:5173","http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-class User(BaseModel):
-    id: int
-    name: str
 
-@app.get("/users")
+app.mount("/", StaticFiles(directory="app/static", html=True), name="static")
+
+DB_CONFIG = {
+    'host': os.environ.get("DB_HOST", "db"),
+    'user': os.environ.get("DB_USER", "user"),
+    'password': os.environ.get("DB_PASSWORD", "password"),
+    'database': os.environ.get("DB_NAME", "testdb"),
+}
+
+
+@app.get("/api/users")
 def get_users():
-    conn = mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        user=os.getenv("DB_USER", "user"),
-        password=os.getenv("DB_PASSWORD", "password"),
-        database=os.getenv("DB_NAME", "testdb")
-    )
-    cursor = conn.cursor()
+    conn = mysql.connector.connect(**DB_CONFIG)
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT id, name FROM users")
     result = cursor.fetchall()
     cursor.close()
     conn.close()
-    return [{"id": r[0], "name": r[1]} for r in result]
+    return result
+
